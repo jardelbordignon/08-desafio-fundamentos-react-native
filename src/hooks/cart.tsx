@@ -30,23 +30,63 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const products = await AsyncStorage.getItem('@GoMarketplace:products')
+
+      if (products)
+        setProducts(JSON.parse(products))
     }
 
     loadProducts();
   }, []);
 
+  // async function saveProducts(arrProducts) {
+  //   console.log(arrProducts.map(p => `${p.id} - ${p.quantity}`))
+  //   setProducts(arrProducts)
+  //   await AsyncStorage.setItem('@GoMarketplace:products', JSON.stringify(arrProducts))
+  // } 
+  async function save(products: Array<Product>) {
+    setProducts(products)
+    await AsyncStorage.setItem('@GoMarketplace:products', JSON.stringify(products))
+  }
+
+
   const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+    const productExists = products.find(p => p.id === product.id)
+
+    const arrProducts = productExists
+      ? products.map( p => p.id === product.id ? {...product, quantity: p.quantity + 1} : p)
+      : [...products, {...product, quantity: 1}]
+
+      save(arrProducts)
+  }, [products]);
+
 
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    const arrProducts = products.map(product => product.id === id
+      ? { ...product, quantity: product.quantity + 1 }
+      : product
+    )
+    
+    save(arrProducts)
+  }, [products]);
 
+  
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    const arrProducts = products.reduce((acc, product) => {
+      if (product.id === id) {
+        if (product.quantity > 1) {
+          product.quantity -= 1
+          acc.push(product)
+        }
+      } else 
+        acc.push(product)
+      
+      return acc
+    }, [] as Array<Product>)
+
+    save(arrProducts)
+  }, [products]);
+
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
